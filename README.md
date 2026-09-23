@@ -24,7 +24,7 @@ Then open http://localhost:8000.
 
 ```
 index.html   page shell
-app.js       loader: fetches p0-p4, decompresses and starts the scene
-p0 ... p4    compressed scene bundle, split into parts
+app.js       built scene bundle (npm run build from src/)
+src/         scene source and street data
 docs/        README assets
 ```
