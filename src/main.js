@@ -488,7 +488,8 @@ el.addEventListener('wheel', e => { e.preventDefault(); view.dist = clampDist(vi
 function clampDist(d) { const base = frameDist(); return Math.max(base * 0.45, Math.min(base * 1.6, d)); }
 function hint() { document.body.classList.add('touched'); }
 addEventListener('keydown', e => { if (e.key === 'ArrowLeft') view.theta += 0.12; if (e.key === 'ArrowRight') view.theta -= 0.12; if (e.key === 'n') modeBtn.click(); });
-addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloom.resolution.set(innerWidth / 2, innerHeight / 2); view.dist = clampDist(view.dist); sizeTilt(); });
+function onResize() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloom.resolution.set(innerWidth / 2, innerHeight / 2); view.dist = clampDist(view.dist); sizeTilt(); }
+addEventListener('resize', onResize);
 
 // ---------- loop ----------
 let last = performance.now(), T0 = last, running = true, first = true;
@@ -500,6 +501,7 @@ function loop() {
   stepCars(dt);
   kites.forEach(k => { k.grp.position.set(k.base.x + Math.sin(t * 0.4 + k.ph) * 6, k.base.y + Math.cos(t * 0.33 + k.ph) * 4, k.base.z + Math.sin(t * 0.9 + k.ph) * 2.5); k.k.rotation.y = Math.sin(t * 1.3 + k.ph) * 0.35; });
   if (egg) { egg.egg = Math.min(1, egg.egg + dt * 0.25); egg.base.set(Math.sin(egg.egg * 3) * 40, -120 + egg.egg * 110, 40 + egg.egg * 30); }
+  if (el.clientWidth !== innerWidth || el.clientHeight !== innerHeight) onResize();
   placeCamera();
   composer.render(dt);
   if (first) { first = false; document.body.classList.add('ready'); }
