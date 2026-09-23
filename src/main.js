@@ -11,7 +11,10 @@ import { HorizontalTiltShiftShader } from 'three/examples/jsm/shaders/Horizontal
 import { VerticalTiltShiftShader } from 'three/examples/jsm/shaders/VerticalTiltShiftShader.js';
 import { buildings, roads } from './data.js';
 
-const $ = s => document.querySelector(s);
+export function mountTown(host, ui) {
+const $ = s => ui.root.querySelector(s);
+const W = () => host.clientWidth || innerWidth, H = () => host.clientHeight || innerHeight;
+
 const TILE = 250; // half-size of the model tile
 const rnd = n => { const x = Math.sin(n * 999.17) * 43758.5453; return x - Math.floor(x); };
 const inTile = (x, y, m = 0) => Math.abs(x) < TILE - m && Math.abs(y) < TILE - m;
@@ -22,22 +25,22 @@ const inQila = (x, y, m = 0) => x > QILA.x0 - m && x < QILA.x1 + m && y > QILA.y
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 const DPR = Math.min(devicePixelRatio || 1, 2);
 renderer.setPixelRatio(DPR);
-renderer.setSize(innerWidth, innerHeight);
+renderer.setSize(W(), H());
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-document.body.prepend(renderer.domElement);
+host.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
 const world = new THREE.Group();
 world.rotation.x = -Math.PI / 2; // author in z-up, view in y-up
 scene.add(world);
 
-const camera = new THREE.PerspectiveCamera(28, innerWidth / innerHeight, 10, 4000);
+const camera = new THREE.PerspectiveCamera(28, W() / H(), 10, 4000);
 const view = { theta: -0.62, phi: 0.92, dist: 520, target: new THREE.Vector3(0, 8, 6) };
-function frameDist() { const a = innerWidth / innerHeight; return a < 0.8 ? 470 / Math.max(a, 0.42) * 0.62 : 520; }
+function frameDist() { const a = W() / H(); return a < 0.8 ? 470 / Math.max(a, 0.42) * 0.62 : 520; }
 view.dist = frameDist();
 function placeCamera() {
   const { theta, phi, dist, target } = view;
@@ -440,7 +443,7 @@ function makeKite(col, x, y, z, s = 1) {
 [['#d9432f', -150, 90, 70], ['#f0b429', 120, 140, 82], ['#2f6fb0', 170, -60, 64], ['#7a3fa0', -110, -150, 76], ['#2f9a6a', 30, 190, 90], ['#e8793a', -200, -30, 58]].forEach(v => makeKite(...v));
 
 // ---------- day / night ----------
-let nightT = location.hash === '#night' ? 1 : 0, nightGoal = nightT;
+let nightT = ui.night ? 1 : 0, nightGoal = nightT;
 function applyNight(t) {
   nightU.value = t;
   paintSky(t);
@@ -451,25 +454,25 @@ function applyNight(t) {
   bulbMat.emissiveIntensity = 2.2 * t; glowMat.opacity = 0.55 * t; cars.head.opacity = t;
   nightLights.forEach(([l, i]) => l.intensity = i * t);
   bloom.strength = 0.42 * t; bloom.enabled = t > 0.02;
-  document.body.classList.toggle('night', t > 0.5);
+  ui.root.classList.toggle('night', t > 0.5);
 }
 
 // ---------- post: bloom at night, tilt-shift always ----------
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.75, 0.45, 0.9); composer.addPass(bloom);
+const bloom = new UnrealBloomPass(new THREE.Vector2(W() / 2, H() / 2), 0.75, 0.45, 0.9); composer.addPass(bloom);
 const hT = new ShaderPass(HorizontalTiltShiftShader), vT = new ShaderPass(VerticalTiltShiftShader); composer.addPass(hT); composer.addPass(vT);
 composer.addPass(new OutputPass());
-function sizeTilt() { const k = innerWidth < 600 ? 1.6 : 2.4; hT.uniforms.h.value = k / innerWidth; vT.uniforms.v.value = k / innerHeight; hT.uniforms.r.value = vT.uniforms.r.value = 0.47; }
+function sizeTilt() { const k = W() < 600 ? 1.6 : 2.4; hT.uniforms.h.value = k / W(); vT.uniforms.v.value = k / H(); hT.uniforms.r.value = vT.uniforms.r.value = 0.47; }
 sizeTilt(); applyNight(nightT);
 
 // ---------- UI ----------
-const modeBtn = $('#mode');
+const modeBtn = $(ui.modeSel || '#mode');
 function setModeLabel() { modeBtn.textContent = nightGoal ? 'Daylight' : 'After dark'; modeBtn.setAttribute('aria-pressed', String(!!nightGoal)); }
 setModeLabel();
-modeBtn.addEventListener('click', () => { nightGoal = nightGoal ? 0 : 1; setModeLabel(); history.replaceState(null, '', nightGoal ? '#night' : location.pathname); });
+modeBtn.addEventListener('click', () => { nightGoal = nightGoal ? 0 : 1; setModeLabel(); ui.onNight && ui.onNight(!!nightGoal); });
 let taps = 0, tapTimer = 0, egg = null;
-$('.hud h1').addEventListener('click', () => {
+$(ui.titleSel || '.hud h1').addEventListener('click', () => {
   clearTimeout(tapTimer); tapTimer = setTimeout(() => taps = 0, 1600);
   if (++taps === 5 && !egg) { $('.secret').classList.add('show'); setTimeout(() => $('.secret').classList.remove('show'), 4200); egg = makeKite('#c9a227', 0, -120, 40, 2.4); egg.egg = 0; }
 });
@@ -486,10 +489,11 @@ const up = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; };
 el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 el.addEventListener('wheel', e => { e.preventDefault(); view.dist = clampDist(view.dist * (1 + e.deltaY * 0.001)); hint(); }, { passive: false });
 function clampDist(d) { const base = frameDist(); return Math.max(base * 0.45, Math.min(base * 1.6, d)); }
-function hint() { document.body.classList.add('touched'); }
-addEventListener('keydown', e => { if (e.key === 'ArrowLeft') view.theta += 0.12; if (e.key === 'ArrowRight') view.theta -= 0.12; if (e.key === 'n') modeBtn.click(); });
-function onResize() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloom.resolution.set(innerWidth / 2, innerHeight / 2); view.dist = clampDist(view.dist); sizeTilt(); }
+function hint() { ui.root.classList.add('touched'); }
+host.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') view.theta += 0.12; if (e.key === 'ArrowRight') view.theta -= 0.12; if (e.key === 'n') modeBtn.click(); });
+function onResize() { camera.aspect = W() / H(); camera.updateProjectionMatrix(); renderer.setSize(W(), H()); composer.setSize(W(), H()); bloom.resolution.set(W() / 2, H() / 2); view.dist = clampDist(view.dist); sizeTilt(); }
 addEventListener('resize', onResize);
+
 
 // ---------- loop ----------
 let last = performance.now(), T0 = last, running = true, first = true;
@@ -501,10 +505,12 @@ function loop() {
   stepCars(dt);
   kites.forEach(k => { k.grp.position.set(k.base.x + Math.sin(t * 0.4 + k.ph) * 6, k.base.y + Math.cos(t * 0.33 + k.ph) * 4, k.base.z + Math.sin(t * 0.9 + k.ph) * 2.5); k.k.rotation.y = Math.sin(t * 1.3 + k.ph) * 0.35; });
   if (egg) { egg.egg = Math.min(1, egg.egg + dt * 0.25); egg.base.set(Math.sin(egg.egg * 3) * 40, -120 + egg.egg * 110, 40 + egg.egg * 30); }
-  if (el.clientWidth !== innerWidth || el.clientHeight !== innerHeight) onResize();
+  if (el.clientWidth !== W() || el.clientHeight !== H()) onResize();
   placeCamera();
   composer.render(dt);
-  if (first) { first = false; document.body.classList.add('ready'); }
+  if (first) { first = false; ui.root.classList.add('ready'); }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+}

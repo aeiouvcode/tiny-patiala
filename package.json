@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --minify --format=iife --target=es2020 --legal-comments=none --outfile=app.js"
+    "build": "esbuild src/pages.js --bundle --minify --format=iife --target=es2020 --legal-comments=none --outfile=app.js"
   },
   "keywords": [],
   "author": "",

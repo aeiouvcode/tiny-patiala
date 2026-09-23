@@ -7,4 +7,5 @@
 - [x] Security scan: no eval/new Function in bundle, no network calls beyond same-origin app.js, no secrets.
 - [x] Deploy v14 (5a30573, fix a3a5dd3) via Git Data API; served app.js/index.html sha256 match local; hosted 390px + desktop, day + night frames verified (A6).
 - [x] Removed unused p0-p4 (nothing references them).
-- [ ] Republish Instinct File with v14.
+- [x] Scene refactored into mountTown(host, ui) so the Pages build (src/pages.js) and the Instinct File share one source.
+- [x] Instinct File republished with v14 (filerevision-01M364JVZ2JHCQS8YSEEZNDVTC, PRIVATE).
