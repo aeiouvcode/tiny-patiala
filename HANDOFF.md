@@ -1,14 +1,14 @@
 # Handoff
 
 ## Resume here
-Deploy index.html, app.js, src/, package.json and these state files, then verify live (served app.js sha256 matches the local build, canvas boots, 390px + desktop day/night frames).
+Work the distance-to-reference list below in order, then rebuild (npm run build), bump the app.js ?v= query in index.html, push, and verify the served hash.
 
-## Blocked
-- The push bridge only updates existing paths: its GET-sha step returns 404 for new files and the helper aborts. Fix: on 404, PUT without sha.
+## Deploy path
+Git Data API from a bridge page (blobs -> tree on base_tree -> commit -> PATCH ref, no force). Handles new and deleted paths in one commit. The token is vault-filled into the page and cleared after each commit.
 
 ## Failed approaches
 - v13 chunked base64+gzip loader run through new Function: works but blocks a strict CSP. Replaced by a plain bundle.
-- Pushing new chunk names q0-q4 through the bridge: failed on the 404 GET step (see above).
+- Contents-API bridge (GET sha then PUT): aborted on 404 for new paths. Replaced by the Git Data API path.
 - Headless screenshots of avon.town with --virtual-time-budget stay on its loader; use puppeteer with real-time waits.
 - Night transition timed with a capped frame delta stalled in slow headless frames; it now uses real elapsed time.
 
